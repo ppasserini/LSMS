@@ -77,7 +77,7 @@ def search_leftover_ssh_process():
                 try:
                     ppid = int(line_split[-1])
                 except Exception as e:
-                    output_error(__file__, "PPid not parsable for pid %d\n\n%s\n\n%s" % (pid, status_data, str(e)))
+                    output_error(__file__, "PPid not parsable for pid %d\n\n%s" % (pid, status_data))
                     break
 
             elif line.startswith("Name:"):

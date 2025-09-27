@@ -23,17 +23,22 @@ https://twitter.com/CraigHRowland/status/1269196509079166976
 import os
 import sys
 
-from lib.util import output_finding
+from lib.state import load_state, store_state
+from lib.util import output_finding, output_error
 
 # Read configuration.
 try:
-    from config.config import ALERTR_FIFO, FROM_ADDR, TO_ADDR
+    from config.config import ALERTR_FIFO, FROM_ADDR, TO_ADDR, STATE_DIR
     from config.search_dev_shm import ACTIVATED
+    MONITORING_MODE = False
+    STATE_DIR = os.path.join(os.path.dirname(__file__), STATE_DIR, os.path.basename(__file__))
 except:
     ALERTR_FIFO = None
     FROM_ADDR = None
     TO_ADDR = None
     ACTIVATED = True
+    MONITORING_MODE = False
+    STATE_DIR = os.path.join("/tmp", os.path.basename(__file__))
 
 
 def search_suspicious_files():
@@ -48,6 +53,17 @@ def search_suspicious_files():
             print("Module deactivated.")
         return
 
+    last_suspicious_files = []
+    if MONITORING_MODE:
+        try:
+            stored_data = load_state(STATE_DIR)
+            if "suspicious_files" in stored_data.keys():
+                last_suspicious_files = stored_data["suspicious_files"]
+
+        except Exception as e:
+            output_error(__file__, str(e))
+            return
+
     # Get all suspicious ELF files.
     fd = os.popen("find /dev/shm -type f -exec file -p '{}' \\; | grep ELF")
     elf_raw = fd.read().strip()
@@ -58,24 +74,44 @@ def search_suspicious_files():
     script_raw = fd.read().strip()
     fd.close()
 
-    suspicious_files = []
+    current_suspicious_files = []
     if elf_raw.strip():
-        suspicious_files.extend(elf_raw.strip().split("\n"))
+        current_suspicious_files.extend(elf_raw.strip().split("\n"))
     if script_raw.strip():
-        suspicious_files.extend(script_raw.strip().split("\n"))
+        current_suspicious_files.extend(script_raw.strip().split("\n"))
 
-    if suspicious_files:
+    # Extract new findings
+    new_suspicious_files = []
+    for current_suspicious_file in current_suspicious_files:
+        if current_suspicious_file not in last_suspicious_files:
+            new_suspicious_files.append(current_suspicious_file)
+
+    # Remove stored findings that do no longer exist
+    for last_suspicious_file in list(last_suspicious_files):
+        if last_suspicious_file not in current_suspicious_files:
+            last_suspicious_files.remove(last_suspicious_file)
+
+    if new_suspicious_files:
         message = "File(s) in /dev/shm suspicious:\n\n"
-        message += "\n".join(suspicious_files)
+        message += "\n".join(new_suspicious_files)
 
         output_finding(__file__, message)
 
+    if MONITORING_MODE:
+        try:
+            last_suspicious_files.extend(new_suspicious_files)
+            store_state(STATE_DIR, {"suspicious_files": last_suspicious_files})
+
+        except Exception as e:
+            output_error(__file__, str(e))
 
 if __name__ == '__main__':
     is_init_run = False
-    if len(sys.argv) == 2:
-        if sys.argv[1] == "--init":
+    if len(sys.argv) > 1:
+        if "--init" in sys.argv:
             is_init_run = True
+        if "--monitoring" in sys.argv:
+            MONITORING_MODE = True
 
     # Script does not need to establish a state.
     if not is_init_run:

@@ -1,6 +1,7 @@
 import difflib
 import os
 import socket
+import traceback
 import threading
 
 from . import global_vars
@@ -22,7 +23,7 @@ def get_diff_per_line(name1: str, data1: str, name2: str, data2: str) -> str:
     return "".join(difflib.unified_diff(temp1, temp2, fromfile=name1, tofile=name2))
 
 
-def output_error(file_name: str, msg: str):
+def output_error(file_name: str, msg: str, output_exception: bool = True):
     # Suppresses output, for example, if an initialization run is performed.
     if global_vars.SUPPRESS_OUTPUT:
         return
@@ -33,6 +34,9 @@ def output_error(file_name: str, msg: str):
     print_output = False
     if ALERTR_FIFO is None and FROM_ADDR is None and TO_ADDR is None:
         print_output = True
+
+    if output_exception:
+        msg += "\n\n%s" % traceback.format_exc()
 
     if print_output:
         message = "#" * 80

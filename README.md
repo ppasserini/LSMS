@@ -9,8 +9,9 @@ or using [AlertR](https://github.com/sqall01/alertR) as notification channel.
 
 The scripts are located in the directory `scripts/`.
 Each script contains a short summary in the header of the file with a description of what it is supposed to do,
-(if needed) dependencies that have to be installed and (if available) references to where the idea for
-this script stems from.
+how to interpret the detection result if not unequivocally and known issues.
+If it has dependencies that have to be installed they are also listed, as well as references to where the idea for
+this script stems from (if available).
 
 Each script has a configuration file in the `scripts/config/` directory to configure it.
 If the configuration file was not found during the execution of the script,
@@ -23,6 +24,10 @@ Scripts using a `monitor_` prefix hold a state and are only useful for monitorin
 A single usage of them for an investigation will only result in showing the current state the
 Linux system and not changes that might be relevant for the system's security. If you want to
 establish the current state of your system as benign for these scripts, you can provide the `--init` argument.
+
+Scripts using a `search_` prefix search for indicators of a compromise. These can be used for investigation
+purposes. If you want to use them for monitoring purposes, you can provide the `--monitoring` argument
+to hold a state and only output new findings.
 
 ## Usage
 
@@ -50,8 +55,10 @@ or [AlertR](https://github.com/sqall01/alertR)).
 them establish a state of your system. However, this assumes that your system is currently uncompromised.
 If you are unsure of this, you should verify its current state.
 
-4. Set up a cron job as `root` user that executes `start_search.py`
-(e.g., `0 *    * * *   root    /opt/LSMS/start_search.py` to start the search hourly).
+4. Set up a cron job as `root` user that executes `start_search.py --monitoring`
+(e.g., `0 *    * * *   root    /opt/LSMS/start_search.py  --monitoring` to start the search hourly).
+The `--monitoring` argument let the scripts only report new findings and thus prevent them from constantly reporting 
+the same issue.
 
 ## List of Scripts
 
@@ -64,13 +71,15 @@ If you are unsure of this, you should verify its current state.
 | Monitoring modules                                                   | [monitor_modules.py](scripts/monitor_modules.py)                             |
 | Monitoring SSH authorized_keys files                                 | [monitor_ssh_authorized_keys.py](scripts/monitor_ssh_authorized_keys.py)     |
 | Monitoring systemd unit files                                        | [monitor_systemd_units.py](scripts/monitor_systemd_units.py)                 |
+| Search running deleted programs                                      | [search_deleted_exe.py](scripts/search_deleted_exe.py)                       |
 | Search executables in /dev/shm                                       | [search_dev_shm.py](scripts/search_dev_shm.py)                               |
-| Search fileless programs (memfd_create)                              | [search_memfd_create.py](scripts/search_memfd_create.py)                     |
 | Search hidden ELF files                                              | [search_hidden_exe.py](scripts/search_hidden_exe.py)                         |
 | Search immutable files                                               | [search_immutable_files.py](scripts/search_immutable_files.py)               |
+| Search lastlog entries missing in utmp logs                          | [search_lastlog_in_utmp.py](scripts/search_lastlog_in_utmp.py)               |
+| Search fileless programs (memfd_create)                              | [search_memfd_create.py](scripts/search_memfd_create.py)                     |
 | Search kernel thread impersonations                                  | [search_non_kthreads.py](scripts/search_non_kthreads.py)                     |
 | Search processes that were started by a now disconnected SSH session | [search_ssh_leftover_processes.py](scripts/search_ssh_leftover_processes.py) |
-| Search running deleted programs                                      | [search_deleted_exe.py](scripts/search_deleted_exe.py)                       |
+| Search kernel module taint flags for suspicious combinations         | [search_tainted_modules.py](scripts/search_tainted_modules.py)               |
+| Search indicators the utmp logs were tampered with                   | [search_utmp_tampering.py](scripts/search_utmp_tampering.py)                 |
 | Test script to check if alerting works                               | [test_alert.py](scripts/test_alert.py)                                       |
 | Verify integrity of installed .deb packages                          | [verify_deb_packages.py](scripts/verify_deb_packages.py)                     |
-

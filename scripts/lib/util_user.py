@@ -23,6 +23,25 @@ class SystemUser:
         self._home = home
         self._shell = shell
 
+    def __eq__(self, other):
+        return (hasattr(other, "name")
+                and self.name == other.name
+                and hasattr(other, "password")
+                and self.password == other.password
+                and hasattr(other, "uid")
+                and self.uid == other.uid
+                and hasattr(other, "gid")
+                and self.gid == other.gid
+                and hasattr(other, "info")
+                and self.info == other.info
+                and hasattr(other, "home")
+                and self.home == other.home
+                and hasattr(other, "shell")
+                and self.shell == other.shell)
+
+    def __hash__(self):
+        return hash((self.name, self.password, self.uid, self.gid, self.info, self.home, self.shell))
+
     def __str__(self):
         return "%s:%s:%d:%d:%s:%s:%s" % (self._name,
                                          self._password,
@@ -35,6 +54,8 @@ class SystemUser:
     @staticmethod
     def from_passwd_line(passwd_line: str):
         line_split = passwd_line.split(":")
+        if len(line_split) != 7:
+            raise ValueError("Illegal line: %s" % passwd_line)
         return SystemUser(line_split[0],
                           line_split[1],
                           int(line_split[2]),
@@ -71,15 +92,14 @@ class SystemUser:
     def shell(self) -> str:
         return self._shell
 
-
-def get_system_users() -> List[SystemUser]:
+def get_system_users(passwd_file: str = "/etc/passwd") -> List[SystemUser]:
     """
     Gets the system's users from /etc/passwd
     :return:
     """
     user_list = []
     try:
-        with open("/etc/passwd", 'rt') as fp:
+        with open(passwd_file, 'rt') as fp:
             for line in fp:
                 if line.strip() == "":
                     continue

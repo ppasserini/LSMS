@@ -127,7 +127,7 @@ def search_immutable_files():
 
                 # Notify and skip line if sanity check fails.
                 if len(output_entry_list) != 2:
-                    output_error(__file__, "Unable to process line '%s'" % output_entry)
+                    output_error(__file__, "Unable to process line '%s'" % output_entry, False)
                     continue
 
                 attributes = output_entry_list[0]
